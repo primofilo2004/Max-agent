@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="MAX">
+<title>⚡ MAX — Warrant Agent</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: #080810; color: #e0e0f0; font-family: 'DM Mono', 'Courier New', monospace; min-height: 100vh; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+  @keyframes slideIn { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }
+  .header { background: linear-gradient(180deg,#0d0d1f,#080810); border-bottom: 1px solid #111; padding: 14px 20px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 100; }
+  .logo { font-size: 22px; font-weight: 900; letter-spacing: -1px; color: #fff; }
+  .subtitle { font-size: 9px; color: #444; letter-spacing: 3px; text-transform: uppercase; margin-top: 2px; }
+  .btn-briefing { padding: 8px 16px; background: transparent; border: 1px solid #00e676; color: #00e676; border-radius: 5px; cursor: pointer; font-family: inherit; font-size: 11px; letter-spacing: 1px; }
+  .btn-briefing:disabled { opacity: 0.3; cursor: not-allowed; }
+  .stats { background: #0a0a14; border-bottom: 1px solid #111; padding: 7px 20px; display: flex; gap: 16px; align-items: center; font-size: 11px; overflow-x: auto; }
+  .tabs { display: flex; border-bottom: 1px solid #111; padding: 0 20px; overflow-x: auto; }
+  .tab { padding: 10px 14px; background: transparent; border: none; border-bottom: 2px solid transparent; color: #333; cursor: pointer; font-family: inherit; font-size: 9px; letter-spacing: 2px; white-space: nowrap; }
+  .tab.active { border-bottom-color: #00e676; color: #00e676; }
+  .content { padding: 16px 20px; max-width: 1400px; margin: 0 auto; }
+  .filters { display: flex; gap: 6px; margin-bottom: 16px; flex-wrap: wrap; }
+  .filter-btn { padding: 4px 10px; font-size: 9px; border-radius: 3px; cursor: pointer; font-family: inherit; letter-spacing: 1px; border: 1px solid #1a1a2e; background: transparent; color: #444; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 12px; }
+  .card { background: #0c0c18; border: 1px solid #131320; border-radius: 8px; padding: 16px; position: relative; overflow: hidden; animation: slideIn 0.2s ease; }
+  .card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; }
+  .ticker { font-size: 20px; font-weight: 900; color: #fff; letter-spacing: -0.5px; }
+  .stock-name { font-size: 9px; color: #333; margin-top: 2px; }
+  .btn-update { padding: 5px 12px; background: rgba(0,230,118,0.1); border: 1px solid #00e676; color: #00e676; border-radius: 3px; cursor: pointer; font-family: inherit; font-size: 9px; letter-spacing: 1px; flex-shrink: 0; }
+  .btn-update:disabled { opacity: 0.3; cursor: not-allowed; }
+  .cat-tag { position: absolute; top: 10px; right: 10px; font-size: 8px; letter-spacing: 1px; opacity: 0.6; }
+  .loading-bar { position: absolute; top: 0; left: 0; right: 0; height: 2px; background: linear-gradient(90deg,transparent,#00e676,transparent); animation: pulse 1s infinite; }
+  .bias-badge { display: inline-block; padding: 3px 10px; border-radius: 3px; font-size: 11px; letter-spacing: 1px; margin-right: 8px; }
+  .bullets { display: flex; flex-direction: column; gap: 4px; margin: 8px 0; }
+  .bullet { display: flex; gap: 7px; font-size: 11px; color: #999; line-height: 1.5; }
+  .bullet-arrow { color: #333; flex-shrink: 0; }
+  .earnings-box { padding: 6px 8px; background: rgba(255,215,64,0.05); border: 1px solid rgba(255,215,64,0.15); border-radius: 4px; font-size: 10px; margin: 6px 0; }
+  .strategia-box { padding: 9px 10px; border-radius: 5px; margin-top: 6px; }
+  .strategia-label { font-size: 8px; letter-spacing: 2px; margin-bottom: 4px; }
+  .strategia-text { font-size: 11px; color: #ddd; line-height: 1.6; }
+  .timestamp { font-size: 8px; color: #1a1a2e; margin-top: 4px; }
+  .empty-state { font-size: 10px; color: #1a1a2e; }
+  .macro-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .macro-card { padding: 14px; background: #0a0a14; border: 1px solid #111; border-radius: 6px; border-left-width: 3px; }
+  .macro-label { font-size: 8px; color: #333; letter-spacing: 2px; margin-bottom: 6px; }
+  .macro-text { font-size: 11px; color: #aaa; line-height: 1.6; }
+  .full-width { grid-column: 1 / -1; }
+  .positions-table { border: 1px solid #111; border-radius: 6px; overflow: hidden; }
+  .pos-header { display: grid; grid-template-columns: 80px 60px 80px 80px 80px 80px 1fr; padding: 9px 14px; background: #0d0d1a; font-size: 8px; color: #333; letter-spacing: 2px; }
+  .pos-row { display: grid; grid-template-columns: 80px 60px 80px 80px 80px 80px 1fr; padding: 11px 14px; font-size: 11px; align-items: center; border-top: 1px solid #0d0d1a; }
+  .pos-row:nth-child(even) { background: #0a0a14; }
+  .add-pos-form { margin-top: 10px; padding: 10px; background: #0a0a14; border: 1px solid #1a1a2e; border-radius: 6px; }
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; margin-bottom: 5px; }
+  input, select { background: #0d0d1a; border: 1px solid #1a1a2e; color: #e0e0f0; padding: 6px 10px; border-radius: 4px; font-family: inherit; font-size: 11px; width: 100%; }
+  input:focus, select:focus { outline: none; border-color: #333; }
+  .type-btns { display: flex; gap: 5px; margin-bottom: 6px; }
+  .type-btn { flex: 1; padding: 4px; border-radius: 3px; cursor: pointer; font-family: inherit; font-size: 11px; border: 1px solid #1a1a2e; background: transparent; color: #444; }
+  .form-actions { display: flex; gap: 5px; margin-top: 8px; }
+  .btn-save { flex: 1; padding: 5px; background: rgba(0,230,118,0.08); border: 1px solid #00e676; color: #00e676; border-radius: 3px; cursor: pointer; font-family: inherit; font-size: 10px; }
+  .btn-cancel { flex: 1; padding: 5px; background: transparent; border: 1px solid #1a1a2e; color: #444; border-radius: 3px; cursor: pointer; font-family: inherit; font-size: 10px; }
+  .btn-add-pos { width: 100%; margin-top: 10px; padding: 5px; background: transparent; border: 1px dashed #1a1a2e; color: #2a2a3a; border-radius: 4px; cursor: pointer; font-family: inherit; font-size: 9px; letter-spacing: 1px; }
+  .pos-display { margin-top: 10px; padding: 7px 9px; background: rgba(0,230,118,0.04); border: 1px solid rgba(0,230,118,0.12); border-radius: 4px; font-size: 10px; }
+  .rules-box { margin-top: 20px; padding: 14px; background: #0a0a14; border: 1px solid #111; border-radius: 6px; font-size: 10px; line-height: 2; color: #333; }
+  @media (max-width: 600px) { .grid { grid-template-columns: 1fr; } .macro-grid { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<div class="header">
+  <div>
+    <div class="logo">⚡ MAX</div>
+    <div class="subtitle" id="today-date"></div>
+  </div>
+  <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+    <div style="display:flex;gap:4px" id="expiry-buttons"></div>
+    <button class="btn-briefing" id="btn-all" onclick="generateAll()">▶ GENERA BRIEFING</button>
+  </div>
+</div>
+
+<div class="stats">
+  <span style="color:#333;font-size:9px;letter-spacing:2px">SEGNALI</span>
+  <span style="color:#00e676" id="call-count">▲ 0 CALL</span>
+  <span style="color:#ff5252" id="put-count">▼ 0 PUT</span>
+  <span style="color:#555">|</span>
+  <span style="color:#ffd740" id="pos-count">📁 0 POSIZIONI</span>
+  <span style="color:#555">|</span>
+  <span style="color:#555">STOP <span style="color:#ff5252">-25%</span> · SCAD <span style="color:#64b5f6">EARNINGS +3M</span></span>
+</div>
+
+<div class="tabs">
+  <button class="tab active" onclick="showTab('briefing')">BRIEFING</button>
+  <button class="tab" onclick="showTab('positions')">POSIZIONI (<span id="pos-tab-count">0</span>)</button>
+  <button class="tab" onclick="showTab('macro')">MACRO</button>
+  <button class="tab" onclick="showTab('mag7')">MAG 7</button>
+</div>
+
+<div class="content">
+  <div id="tab-briefing">
+    <div class="filters" id="category-filters"></div>
+    <div class="grid" id="stock-grid"></div>
+  </div>
+  <div id="tab-positions" style="display:none">
+    <div style="font-size:16px;font-weight:800;color:#fff;margin-bottom:16px;font-family:sans-serif">PORTAFOGLIO WARRANTS</div>
+    <div id="positions-content"></div>
+    <div class="rules-box">
+      <div style="color:#555;letter-spacing:1px;margin-bottom:4px;font-size:9px">REGOLE STRATEGIA MAX</div>
+      <div>🛑 Stop Loss: <span style="color:#ff5252">-25%</span> dal prezzo entrata</div>
+      <div>📅 Scadenza minima: <span style="color:#64b5f6">earnings + 3 mesi</span></div>
+      <div>⚡ Liquidare <span style="color:#ffd740">prima degli earnings</span></div>
+      <div>📐 Scadenze: <span style="color:#888">Mar · Giu · Set · Dic</span></div>
+      <div>🏦 Emittenti: <span style="color:#888">Vontobel · Société Générale</span> via Trade Republic</div>
+    </div>
+  </div>
+  <div id="tab-macro" style="display:none">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+      <div style="font-size:16px;font-weight:800;color:#fff;font-family:sans-serif">MACRO BRIEFING</div>
+      <button class="btn-briefing" onclick="generateMacro()">▶ AGGIORNA</button>
+    </div>
+    <div id="macro-content" style="color:#1a1a2e;font-size:12px">Clicca AGGIORNA per il briefing macro.</div>
+  </div>
+  <div id="tab-mag7" style="display:none">
+    <div style="font-size:16px;font-weight:800;color:#fff;margin-bottom:6px;font-family:sans-serif">MAG 7 — STRATEGIA EARNINGS</div>
+    <div style="font-size:10px;color:#333;margin-bottom:18px;line-height:1.8">Warrants tattici solo in prossimità degli earnings · <span style="color:#ffd740">Liquidare prima degli earnings</span> · Scadenza: <span style="color:#64b5f6">earnings + 3 mesi minimi</span></div>
+    <div class="grid" id="mag7-grid"></div>
+  </div>
+</div>
+<script>
+const WATCHLIST = [
+  { ticker: "NVDA", name: "NVIDIA", sector: "AI Infrastructure", category: "AI" },
+  { ticker: "MU", name: "Micron", sector: "AI Memory / HBM", category: "AI" },
+  { ticker: "MRVL", name: "Marvell", sector: "AI Chip", category: "AI" },
+  { ticker: "ARM", name: "ARM Holdings", sector: "Chip Architecture", category: "AI" },
+  { ticker: "NBIS", name: "Nebius", sector: "AI Cloud", category: "AI", openPosition: "CALL" },
+  { ticker: "IONQ", name: "IonQ", sector: "Quantum", category: "QUANTUM", openPosition: "CALL" },
+  { ticker: "QBTS", name: "D-Wave", sector: "Quantum", category: "QUANTUM" },
+  { ticker: "RGTI", name: "Rigetti", sector: "Quantum", category: "QUANTUM" },
+  { ticker: "CEG", name: "Constellation Energy", sector: "Nucleare / AI Energy", category: "ENERGY" },
+  { ticker: "GEV", name: "GE Vernova", sector: "Energia / Grid", category: "ENERGY" },
+  { ticker: "TLN", name: "Talen Energy", sector: "Nucleare / Data Center", category: "ENERGY" },
+  { ticker: "CCJ", name: "Cameco", sector: "Uranio", category: "ENERGY" },
+  { ticker: "UEC", name: "Uranium Energy", sector: "Uranio", category: "ENERGY" },
+  { ticker: "OKLO", name: "Oklo", sector: "SMR Speculativo", category: "ENERGY" },
+  { ticker: "TSLA", name: "Tesla", sector: "AI / Robotica / Musk", category: "SPECULATIVE" },
+];
+
+const MAG7 = [
+  { ticker: "AAPL", name: "Apple" },
+  { ticker: "MSFT", name: "Microsoft" },
+  { ticker: "GOOGL", name: "Alphabet" },
+  { ticker: "AMZN", name: "Amazon" },
+  { ticker: "META", name: "Meta" },
+  { ticker: "NVDA", name: "NVIDIA" },
+  { ticker: "TSLA", name: "Tesla" },
+];
+
+const EXPIRIES = ["Jun 2026", "Sep 2026", "Dec 2026", "Mar 2027"];
+const CAT_COLORS = { AI: "#64b5f6", QUANTUM: "#ce93d8", ENERGY: "#81c784", SPECULATIVE: "#ffd740" };
+
+let briefings = {};
+let positions = {};
+let selectedExpiry = "Dec 2026";
+let activeCategory = "ALL";
+let showAddPos = null;
+let newPos = { type: "CALL", entryPrice: "", contracts: "", expiry: "Dec 2026", isin: "", emittente: "Vontobel", notes: "" };
+
+document.getElementById('today-date').textContent = 'WARRANT BRIEFING AGENT · ' + new Date().toLocaleDateString('it-IT', { weekday:'long', year:'numeric', month:'long', day:'numeric' });
+
+const expBtn = document.getElementById('expiry-buttons');
+EXPIRIES.forEach(e => {
+  const b = document.createElement('button');
+  b.textContent = e;
+  b.style.cssText = `padding:4px 9px;font-size:9px;border:1px solid ${e===selectedExpiry?'#ffd740':'#1a1a2e'};background:${e===selectedExpiry?'rgba(255,215,64,0.1)':'transparent'};color:${e===selectedExpiry?'#ffd740':'#444'};border-radius:3px;cursor:pointer;font-family:inherit`;
+  b.onclick = () => { selectedExpiry = e; };
+  expBtn.appendChild(b);
+});
+
+const catFilters = document.getElementById('category-filters');
+['ALL','AI','QUANTUM','ENERGY','SPECULATIVE'].forEach(cat => {
+  const b = document.createElement('button');
+  b.textContent = cat;
+  b.className = 'filter-btn';
+  const color = CAT_COLORS[cat] || '#00e676';
+  b.style.cssText = `border-color:${cat==='ALL'?'#00e676':'#1a1a2e'};color:${cat==='ALL'?'#00e676':'#444'};background:${cat==='ALL'?'rgba(0,230,118,0.1)':'transparent'}`;
+  b.onclick = () => { activeCategory = cat; renderGrid(); updateCatButtons(); };
+  catFilters.appendChild(b);
+});
+
+function updateCatButtons() {
+  document.querySelectorAll('#category-filters button').forEach((b, i) => {
+    const cats = ['ALL','AI','QUANTUM','ENERGY','SPECULATIVE'];
+    const cat = cats[i];
+    const active = cat === activeCategory;
+    const color = CAT_COLORS[cat] || '#00e676';
+    b.style.borderColor = active ? color : '#1a1a2e';
+    b.style.color = active ? color : '#444';
+    b.style.background = active ? color+'15' : 'transparent';
+  });
+}
+
+function getBiasColor(bias) {
+  if (!bias) return "#555";
+  const b = bias.toLowerCase();
+  if (b.includes("call")||b.includes("bullish")||b.includes("rialzist")) return "#00e676";
+  if (b.includes("put")||b.includes("bearish")||b.includes("ribassist")) return "#ff5252";
+  return "#ffd740";
+}
+
+function getBiasBg(bias) {
+  if (!bias) return "#0c0c18";
+  const b = bias.toLowerCase();
+  if (b.includes("call")||b.includes("bullish")) return "rgba(0,230,118,0.06)";
+  if (b.includes("put")||b.includes("bearish")) return "rgba(255,82,82,0.06)";
+  return "rgba(255,215,64,0.06)";
+}
+
+async function callBriefing(ticker, name, type='stock') {
+  const res = await fetch('/api/briefing', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ ticker, name, type }),
+  });
+  const data = await res.json();
+  return data.result || '';
+}
+
+async function generateBriefing(stock) {
+  const cardId = 'card-' + stock.ticker;
+  const card = document.getElementById(cardId);
+  if (card) {
+    const existing = card.querySelector('.loading-bar');
+    if (existing) existing.remove();
+    const lb = document.createElement('div');
+    lb.className = 'loading-bar';
+    card.insertBefore(lb, card.firstChild);
+    const btn = card.querySelector('.btn-update');
+    if (btn) btn.disabled = true;
+  }
+  try {
+    const result = await callBriefing(stock.ticker, stock.name);
+    const clean = result.replace(/```json|```/g,'').trim();
+    briefings[stock.ticker] = { ...JSON.parse(clean), timestamp: new Date().toLocaleTimeString('it-IT') };
+  } catch(e) {
+    briefings[stock.ticker] = { news: 'Errore. Riprova.', timestamp: new Date().toLocaleTimeString('it-IT') };
+  }
+  renderGrid();
+  updateStats();
+}
+
+async function generateAll() {
+  const btn = document.getElementById('btn-all');
+  btn.disabled = true;
+  btn.textContent = '⟳ ANALISI...';
+  await generateMacro();
+  for (const stock of WATCHLIST) { await generateBriefing(stock); }
+  btn.disabled = false;
+  btn.textContent = '▶ GENERA BRIEFING';
+}
+
+async function generateMacro() {
+  document.getElementById('macro-content').innerHTML = '<div style="animation:pulse 1s infinite;color:#1a1a2e">Analisi macro in corso...</div>';
+  try {
+    const result = await callBriefing('','','macro');
+    const parsed = JSON.parse(result.replace(/```json|```/g,'').trim());
+    const items = [
+      {key:'fed',label:'🇺🇸 FED / TASSI USA',color:'#64b5f6'},
+      {key:'bce',label:'🇪🇺 BCE / BTP',color:'#81c784'},
+      {key:'macro',label:'📊 DATO MACRO',color:'#ffb74d'},
+      {key:'sentiment',label:'🧠 SENTIMENT',color:'#ce93d8'},
+      {key:'vix',label:'📈 VIX',color:'#ff8a65'},
+    ];
+    let html = '<div class="macro-grid">';
+    items.forEach(item => {
+      const fw = item.key==='vix'?' full-width':'';
+      html += `<div class="macro-card${fw}" style="border-left-color:${item.color}"><div class="macro-label">${item.label}</div><div class="macro-text">${parsed[item.key]||'—'}</div></div>`;
+    });
+    if (parsed.alert) html += `<div class="macro-card full-width" style="border-left-color:#ff5252;background:rgba(255,82,82,0.04)"><div class="macro-text" style="color:#ff5252">⚠️ ${parsed.alert}</div></div>`;
+    html += '</div>';
+    document.getElementById('macro-content').innerHTML = html;
+  } catch(e) {
+    document.getElementById('macro-content').textContent = 'Errore. Riprova.';
+  }
+}
+
+function renderGrid() {
+  const filtered = activeCategory==='ALL' ? WATCHLIST : WATCHLIST.filter(s=>s.category===activeCategory);
+  document.getElementById('stock-grid').innerHTML = '';
+  filtered.forEach(stock => renderCard(stock, document.getElementById('stock-grid'), false));
+  document.getElementById('mag7-grid').innerHTML = '';
+  MAG7.forEach(stock => renderCard(stock, document.getElementById('mag7-grid'), true));
+}
+
+function renderCard(stock, container, isMag7) {
+  const b = briefings[stock.ticker];
+  const pos = positions[stock.ticker];
+  const biasColor = getBiasColor(b?.bias);
+  const catColor = CAT_COLORS[stock.category]||'#555';
+  const card = document.createElement('div');
+  card.className = 'card';
+  card.id = 'card-' + stock.ticker + (isMag7?'-mag7':'');
+  card.style.background = getBiasBg(b?.bias);
+  card.style.borderColor = b?.bias ? biasColor+'22' : '#131320';
+  let html = '';
+  if (!isMag7) html += `<div class="cat-tag" style="color:${catColor}">${stock.category}</div>`;
+  html += `<div class="card-header"><div><div class="ticker">${stock.ticker}${stock.openPosition?`<span style="font-size:8px;color:#00e676;margin-left:6px">● ${stock.openPosition}</span>`:''}</div><div class="stock-name">${stock.name}${stock.sector?' · '+stock.sector:''}</div></div><button class="btn-update" onclick='generateBriefing(${JSON.stringify(stock)})'>↺ AGGIORNA</button></div>`;
+  if (b?.bias) html += `<div style="margin-bottom:8px"><span class="bias-badge" style="background:${biasColor}18;border:1px solid ${biasColor};color:${biasColor}">${b.bias}</span>${b.rischio?`<span style="font-size:9px;color:${b.rischio==='Alto'?'#ff5252':b.rischio==='Medio'?'#ffd740':'#00e676'}">RISCHIO ${b.rischio}</span>`:''}</div>`;
+  if (b) {
+    if (b.bullets?.length) {
+      html += '<div class="bullets">';
+      b.bullets.forEach(bullet => { html += `<div class="bullet"><span class="bullet-arrow">▸</span><span>${bullet}</span></div>`; });
+      html += '</div>';
+    }
+    if (b.earnings_date && b.earnings_date!=='N/D') html += `<div class="earnings-box"><div style="color:#ffd740">📅 EARNINGS: ${b.earnings_date}</div>${b.expiry_minima?`<div style="color:#64b5f6;margin-top:2px">⏱ Scadenza min: ${b.expiry_minima}</div>`:''}${b.pre_earnings_action?`<div style="color:#ff8a65;margin-top:2px">⚡ ${b.pre_earnings_action}</div>`:''}</div>`;
+    if (b.strategia) html += `<div class="strategia-box" style="background:${biasColor}10;border:1px solid ${biasColor}40"><div class="strategia-label" style="color:${biasColor}">STRATEGIA MAX</div><div class="strategia-text">${b.strategia}</div></div>`;
+    if (b.news && !b.bullets) html += `<div style="font-size:11px;color:#888;line-height:1.5">${b.news}</div>`;
+    html += `<div class="timestamp">${b.timestamp}</div>`;
+  } else {
+    html += `<div class="empty-state">Nessuna analisi — clicca AGGIORNA</div>`;
+  }
+  if (!isMag7) {
+    if (pos) {
+      html += `<div class="pos-display"><div style="display:flex;justify-content:space-between"><span style="color:#00e676">📁 ${pos.type} · ${pos.contracts}x @ ${pos.entryPrice} · Totale: <strong style="color:#fff">€${pos.totalInvested}</strong></span><button onclick="removePosition('${stock.ticker}')" style="background:transparent;border:none;color:#ff5252;cursor:pointer;font-size:10px">✕</button></div><div style="color:#444;margin-top:2px">SL: <span style="color:#ff5252">${pos.stopLoss} (€${pos.stopLossTotal})</span> · ${pos.expiry} · ${pos.entryDate}</div>${pos.isin?`<div style="color:#555;margin-top:1px">ISIN: ${pos.isin} · ${pos.emittente}</div>`:''}${pos.notes?`<div style="color:#444;margin-top:1px">${pos.notes}</div>`:''}</div>`;
+    } else {
+      html += `<button class="btn-add-pos" onclick="toggleAddPos('${stock.ticker}')">+ AGGIUNGI POSIZIONE</button>`;
+    }
+    if (showAddPos===stock.ticker) {
+      html += `<div class="add-pos-form"><div style="font-size:9px;color:#444;margin-bottom:8px;letter-spacing:1px">NUOVA POSIZIONE · STOP AUTO -25%</div><div class="type-btns"><button class="type-btn" onclick="setNewPosType('CALL','${stock.ticker}')" style="background:${newPos.type==='CALL'?'rgba(0,230,118,0.12)':'transparent'};border-color:${newPos.type==='CALL'?'#00e676':'#1a1a2e'};color:${newPos.type==='CALL'?'#00e676':'#444'}">CALL</button><button class="type-btn" onclick="setNewPosType('PUT','${stock.ticker}')" style="background:${newPos.type==='PUT'?'rgba(255,82,82,0.12)':'transparent'};border-color:${newPos.type==='PUT'?'#ff5252':'#1a1a2e'};color:${newPos.type==='PUT'?'#ff5252':'#444'}">PUT</button></div><div class="form-row"><input placeholder="Prezzo unitario (es. 0.85)" id="inp-price-${stock.ticker}" value="${newPos.entryPrice}" oninput="newPos.entryPrice=this.value;updateCalc('${stock.ticker}')"><input placeholder="N° contratti" id="inp-qty-${stock.ticker}" value="${newPos.contracts}" oninput="newPos.contracts=this.value;updateCalc('${stock.ticker}')"></div><div id="calc-${stock.ticker}" style="font-size:9px;color:#555;margin-bottom:5px;padding:4px 6px;background:#0d0d1a;border-radius:3px;display:none"></div><select id="inp-expiry-${stock.ticker}" onchange="newPos.expiry=this.value" style="margin-bottom:5px">${EXPIRIES.map(e=>`<option ${e===newPos.expiry?'selected':''}>${e}</option>`).join('')}</select><input placeholder="ISIN (es. DE000VQ3ABC1)" id="inp-isin-${stock.ticker}" value="${newPos.isin}" oninput="newPos.isin=this.value" style="margin-bottom:5px"><div class="type-btns" style="margin-bottom:5px"><button class="type-btn" onclick="setEmittente('Vontobel','${stock.ticker}')" style="font-size:9px;background:${newPos.emittente==='Vontobel'?'rgba(255,215,64,0.1)':'transparent'};border-color:${newPos.emittente==='Vontobel'?'#ffd740':'#1a1a2e'};color:${newPos.emittente==='Vontobel'?'#ffd740':'#444'}">Vontobel</button><button class="type-btn" onclick="setEmittente('Société Générale','${stock.ticker}')" style="font-size:9px;background:${newPos.emittente==='Société Générale'?'rgba(255,215,64,0.1)':'transparent'};border-color:${newPos.emittente==='Société Générale'?'#ffd740':'#1a1a2e'};color:${newPos.emittente==='Société Générale'?'#ffd740':'#444'}">Société Générale</button></div><input placeholder="Note (opzionale)" id="inp-notes-${stock.ticker}" value="${newPos.notes}" oninput="newPos.notes=this.value" style="margin-bottom:8px"><div class="form-actions"><button class="btn-save" onclick="savePosition('${stock.ticker}')">SALVA</button><button class="btn-cancel" onclick="toggleAddPos(null)">ANNULLA</button></div></div>`;
+    }
+  }
+  card.innerHTML = html;
+  container.appendChild(card);
+}
+
+function updateCalc(ticker) {
+  const p = parseFloat(document.getElementById('inp-price-'+ticker)?.value);
+  const q = parseInt(document.getElementById('inp-qty-'+ticker)?.value);
+  const calc = document.getElementById('calc-'+ticker);
+  if (calc&&p&&q) { calc.style.display='block'; calc.innerHTML=`Totale: <span style="color:#fff">€${(p*q).toFixed(2)}</span> · Stop: <span style="color:#ff5252">€${(p*q*0.75).toFixed(2)}</span>`; }
+}
+
+function setNewPosType(type, ticker) { newPos.type=type; renderGrid(); }
+function setEmittente(em, ticker) { newPos.emittente=em; renderGrid(); }
+function toggleAddPos(ticker) { showAddPos=showAddPos===ticker?null:ticker; renderGrid(); }
+
+function savePosition(ticker) {
+  const entry = parseFloat(newPos.entryPrice);
+  const contracts = parseInt(newPos.contracts)||1;
+  positions[ticker] = { ...newPos, entryPrice:entry, contracts, totalInvested:(entry*contracts).toFixed(2), stopLoss:(entry*0.75).toFixed(3), stopLossTotal:(entry*contracts*0.75).toFixed(2), entryDate:new Date().toLocaleDateString('it-IT') };
+  showAddPos=null;
+  newPos={ type:'CALL', entryPrice:'', contracts:'', expiry:'Dec 2026', isin:'', emittente:'Vontobel', notes:'' };
+  renderGrid(); updateStats(); renderPositions();
+}
+
+function removePosition(ticker) { delete positions[ticker]; renderGrid(); updateStats(); renderPositions(); }
+
+function renderPositions() {
+  const entries = Object.entries(positions);
+  document.getElementById('pos-count').textContent = `📁 ${entries.length} POSIZIONI`;
+  document.getElementById('pos-tab-count').textContent = entries.length;
+  const cont = document.getElementById('positions-content');
+  if (!entries.length) { cont.innerHTML='<div style="color:#1a1a2e;font-size:13px;text-align:center;padding:50px 0">Nessuna posizione aperta</div>'; return; }
+  let html = '<div class="positions-table"><div class="pos-header"><div>TICKER</div><div>TIPO</div><div>QTÀ</div><div>ENTRATA</div><div>TOTALE</div><div>STOP</div><div>SCAD · ISIN · EMITT.</div></div>';
+  entries.forEach(([ticker,pos],i) => {
+    html += `<div class="pos-row" style="background:${i%2===0?'#080810':'#0a0a14'}"><div style="color:#fff;font-weight:500">${ticker}</div><div style="color:${pos.type==='CALL'?'#00e676':'#ff5252'}">${pos.type}</div><div style="color:#888">${pos.contracts}</div><div style="color:#888">${pos.entryPrice}</div><div style="color:#fff">€${pos.totalInvested}</div><div style="color:#ff5252">€${pos.stopLossTotal}</div><div style="color:#444;font-size:9px">${pos.expiry} · ${pos.isin||'—'} · ${pos.emittente}</div></div>`;
+  });
+  html += '</div>';
+  cont.innerHTML = html;
+}
+
+function updateStats() {
+  document.getElementById('call-count').textContent = `▲ ${Object.values(briefings).filter(b=>b.bias==='CALL').length} CALL`;
+  document.getElementById('put-count').textContent = `▼ ${Object.values(briefings).filter(b=>b.bias==='PUT').length} PUT`;
+  renderPositions();
+}
+
+function showTab(tab) {
+  ['briefing','positions','macro','mag7'].forEach(t => { document.getElementById('tab-'+t).style.display=t===tab?'block':'none'; });
+  document.querySelectorAll('.tab').forEach((btn,i) => { btn.classList.toggle('active',['briefing','positions','macro','mag7'][i]===tab); });
+}
+
+renderGrid();
+renderPositions();
+</script>
+</body>
+</html>
